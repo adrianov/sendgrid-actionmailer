@@ -4,7 +4,7 @@ require 'sendgrid-ruby'
 
 module SendGridActionMailer
   class DeliveryMethod
-    # TODO: use custom class to customer excpetion payload
+    # TODO: use custom class to customer exception payload
     SendgridDeliveryError = Class.new(StandardError)
 
     include SendGrid
@@ -20,8 +20,16 @@ module SendGridActionMailer
 
     def deliver!(mail)
       sendgrid_mail = Mail.new.tap do |m|
-        m.from = to_email(mail.from)
-        m.reply_to = to_email(mail.reply_to.first) if mail.reply_to && mail.reply_to.first
+        m.from = to_email(
+          mail[:from].address_list.addresses.first.address,
+          mail[:from].address_list.addresses.first.display_name
+        )
+        if mail.reply_to && mail.reply_to.first
+          m.reply_to = to_email(
+            mail[:reply_to].address_list.addresses.first.address,
+            mail[:reply_to].address_list.addresses.first.display_name
+          )
+        end
         m.subject = mail.subject
         # https://sendgrid.com/docs/Classroom/Send/v3_Mail_Send/personalizations.html
         m.add_personalization(to_personalizations(mail))
@@ -38,25 +46,15 @@ module SendGridActionMailer
       Content.new(type: "text/#{type}", value: value)
     end
 
-    def to_email(input)
-      if input.is_a?(String)
-        Email.new(email: input)
-      elsif input.is_a?(::Mail::AddressContainer)
-        to_email(input.instance_variable_get('@field') || input.first)
-      elsif input.is_a?(::Mail::StructuredField)
-        to_email input.value
-      elsif input.nil?
-        nil
-      else
-        puts "unknown type #{input.class.name}"
-      end
+    def to_email(email, name = nil)
+      Email.new(email: email, name: name)
     end
 
     def to_personalizations(mail)
       Personalization.new.tap do |p|
-        mail.to.each { |to| p.add_to(to_email(to)) }
-        mail.cc.each { |cc| p.add_cc(to_email(cc)) } unless mail.cc.nil?
-        mail.bcc.each { |bcc| p.add_bcc(to_email(bcc)) } unless mail.bcc.nil?
+        mail[:to].address_list.addresses.each { |to| p.add_to(to_email(to.address, to.display_name)) }
+        mail[:cc].address_list.addresses.each { |cc| p.add_cc(to_email(cc.address, cc.display_name)) } unless mail.cc.nil?
+        mail[:bcc].address_list.addresses.each { |bcc| p.add_bcc(to_email(bcc.address, bcc.display_name)) } unless mail.bcc.nil?
       end
     end
 
