@@ -8,7 +8,7 @@ An ActionMailer adapter to send email using SendGrid's HTTPS Web API (instead of
 
 Add this line to your application's Gemfile:
 
-    gem 'sendgrid-actionmailer', github: 'dikond/sendgrid-actionmailer', branch: 'sendgrid_5'
+    gem 'sendgrid-actionmailer', github: 'adrianov/sendgrid-actionmailer'
 
 ## Usage
 
